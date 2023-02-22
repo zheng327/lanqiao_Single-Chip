@@ -1,0 +1,402 @@
+C51 COMPILER V9.56.0.0   MAIN                                                              01/22/2022 13:09:18 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "STC15F2K60S2.H"
+   2          #include "onewire.h"
+   3          #include "my.h"
+   4          
+   5          sbit L1 = P0^0;
+   6          sbit L2 = P0^1;
+   7          
+   8          code unsigned char duan[]={0xc0, 0xf9, 0xa4, 0xb0, 0x99, 0x92, 0x82, 0xf8, 0x80, 0x90, 0x88, 0x83, 0xc6, 0
+             -xa1, 0x86, 0x8e};
+   9          
+  10          unsigned char Dis_Mod = 0;
+  11          unsigned char Temp_now = 0;
+  12          unsigned char Temp_lev = 0;
+  13          unsigned char T_max = 30,T_min = 20;
+  14          unsigned char Max_shi = 10,Max_ge = 10,Min_shi = 10,Min_ge = 10;
+  15          unsigned char Set_num = 0;
+  16          unsigned char Dtime_10ms = 0;
+  17          unsigned char Count_10ms = 0;
+  18          bit L1_Flag = 1;
+  19          bit L2_Flag = 1;
+  20          
+  21          void Init_T0(void)
+  22          {
+  23   1        TMOD = 0x01;
+  24   1        AUXR = 0x00;
+  25   1        TH0 = (65536 - 10000) / 256;
+  26   1        TL0 = (65536 - 10000) % 256;
+  27   1        TR0 = 1;
+  28   1        EA = 1;
+  29   1        ET0 = 1;
+  30   1      }
+  31          
+  32          
+  33          void Display(void)
+  34          {
+  35   1        Temp_now = rd_temperature();
+  36   1        if(Temp_now < T_min)
+  37   1        {
+  38   2          Temp_lev = 0;
+  39   2          Dtime_10ms = 80;
+  40   2          InputP0(5,0x00);
+  41   2        }
+  42   1        else if(T_min <= Temp_now && Temp_now <= T_max)
+  43   1        {
+  44   2          Temp_lev = 1;
+  45   2          Dtime_10ms = 40;
+  46   2          InputP0(5,0x00);
+  47   2        }
+  48   1        else
+  49   1        {
+  50   2          Temp_lev = 2;
+  51   2          Dtime_10ms = 20;
+  52   2          InputP0(5,0x10);
+  53   2        }
+C51 COMPILER V9.56.0.0   MAIN                                                              01/22/2022 13:09:18 PAGE 2   
+
+  54   1        if(Dis_Mod == 0)
+  55   1        {
+  56   2          InputP0(6,0x01);
+  57   2          InputP0(7,0xBF);
+  58   2          Delay(4);
+  59   2          InputP0(7,0xFF);
+  60   2          
+  61   2          InputP0(6,0x02);
+  62   2          InputP0(7,duan[Temp_lev]);
+  63   2          Delay(4);
+  64   2          InputP0(7,0xFF);
+  65   2          
+  66   2          InputP0(6,0x04);
+  67   2          InputP0(7,0xBF);
+  68   2          Delay(4);
+  69   2          InputP0(7,0xFF);
+  70   2          
+  71   2          InputP0(6,0x40);
+  72   2          InputP0(7,duan[Temp_now/10]);
+  73   2          Delay(4);
+  74   2          InputP0(7,0xFF);
+  75   2          
+  76   2          InputP0(6,0x80);
+  77   2          InputP0(7,duan[Temp_now%10]);
+  78   2          Delay(4);
+  79   2          InputP0(7,0xFF);
+  80   2        }
+  81   1        else if(Dis_Mod == 1)
+  82   1        {
+  83   2          InputP0(6,0x01);
+  84   2          InputP0(7,0xBF);
+  85   2          Delay(4);
+  86   2          InputP0(7,0xFF);
+  87   2          
+  88   2          if(Set_num >= 1)
+  89   2          {
+  90   3            InputP0(6,0x02);
+  91   3            InputP0(7,duan[Max_shi]);
+  92   3            Delay(4);
+  93   3            InputP0(7,0xFF);
+  94   3          }
+  95   2          
+  96   2          if(Set_num >= 2)
+  97   2          {
+  98   3            InputP0(6,0x04);
+  99   3            InputP0(7,duan[Max_ge]);
+ 100   3            Delay(4);
+ 101   3            InputP0(7,0xFF);
+ 102   3          }
+ 103   2          
+ 104   2          InputP0(6,0x20);
+ 105   2          InputP0(7,0xBF);
+ 106   2          Delay(4);
+ 107   2          InputP0(7,0xFF);
+ 108   2          
+ 109   2          if(Set_num >= 3)
+ 110   2          {
+ 111   3            InputP0(6,0x40);
+ 112   3            InputP0(7,duan[Min_shi]);
+ 113   3            Delay(4);
+ 114   3            InputP0(7,0xFF);
+ 115   3          }
+C51 COMPILER V9.56.0.0   MAIN                                                              01/22/2022 13:09:18 PAGE 3   
+
+ 116   2          
+ 117   2          
+ 118   2          if(Set_num >= 4)
+ 119   2          {
+ 120   3            InputP0(6,0x80);
+ 121   3            InputP0(7,duan[Min_ge]);
+ 122   3            Delay(4);
+ 123   3            InputP0(7,0xFF);
+ 124   3          }
+ 125   2        }
+ 126   1      }
+ 127          
+ 128          unsigned char Key_Scanf(void)
+ 129          {
+ 130   1        unsigned char row,col,key_value;
+ 131   1        P30 = 0; P31 = 0; P32 = 0; P33 = 0; P34 = 1; P35 = 1; P42 = 1; P44 = 1;
+ 132   1        if(!P34)
+ 133   1          row = 4;
+ 134   1        else if(!P35)
+ 135   1          row = 3;
+ 136   1        else if(!P42)
+ 137   1          row = 2;
+ 138   1        else if(!P44)
+ 139   1          row = 1;
+ 140   1        else 
+ 141   1          row = 0;
+ 142   1        
+ 143   1        P30 = 1; P31 = 1; P32 = 1; P33 = 1; P34 = 0; P35 = 0; P42 = 0; P44 = 0;
+ 144   1        if(!P30)
+ 145   1          col = 4;
+ 146   1        else if(!P31)
+ 147   1          col = 3;
+ 148   1        else if(!P32)
+ 149   1          col = 2;
+ 150   1        else if(!P33)
+ 151   1          col = 1;
+ 152   1        else 
+ 153   1          col = 0;
+ 154   1        if(row && col)
+ 155   1          key_value = row * 4 + col - 1;
+ 156   1        else
+ 157   1          key_value = 0;
+ 158   1        
+ 159   1        P30 = 1; P31 = 1; P32 = 1; P33 = 1; P34 = 1; P35 = 1; P42 = 1; P44 = 1;
+ 160   1        
+ 161   1        return key_value;
+ 162   1      }
+ 163          
+ 164          void Key_Work(void)
+ 165          {
+ 166   1        unsigned char x;
+ 167   1        TR0 = 0;
+ 168   1        x = Key_Scanf();
+ 169   1        //进入设置页面
+ 170   1        if(Dis_Mod == 0 && x == 8)
+ 171   1        {
+ 172   2          Delay(10);
+ 173   2          if(Dis_Mod == 0 && x == 8)
+ 174   2          {
+ 175   3            Dis_Mod = 1;
+ 176   3          }
+ 177   2          while(x == 8)
+C51 COMPILER V9.56.0.0   MAIN                                                              01/22/2022 13:09:18 PAGE 4   
+
+ 178   2            x = Key_Scanf();
+ 179   2        }
+ 180   1        //清除
+ 181   1        else if(Dis_Mod == 1 && x == 12)
+ 182   1        {
+ 183   2          Delay(10);
+ 184   2          if(Dis_Mod == 1 && x == 12)
+ 185   2          {
+ 186   3            Max_shi = 0;
+ 187   3            Max_ge = 0;
+ 188   3            Min_shi = 0;
+ 189   3            Min_ge = 0;
+ 190   3            Set_num = 0;
+ 191   3          }
+ 192   2          while(x == 12)
+ 193   2            x = Key_Scanf();
+ 194   2        }
+ 195   1        //
+ 196   1        else if(Dis_Mod == 1 && Set_num == 0 && x)
+ 197   1        {
+ 198   2          Delay(10);
+ 199   2          if(Dis_Mod == 1 && Set_num == 0 && x)
+ 200   2          {
+ 201   3            switch(x)
+ 202   3            {
+ 203   4              case 4:Max_shi = 9;break;
+ 204   4              case 5:Max_shi = 6;break;
+ 205   4              case 6:Max_shi = 3;break;
+ 206   4              case 7:Max_shi = 0;break;
+ 207   4              case 9:Max_shi = 7;break;
+ 208   4              case 10:Max_shi = 4;break;
+ 209   4              case 11:Max_shi = 1;break;
+ 210   4              case 13:Max_shi = 8;break;
+ 211   4              case 14:Max_shi = 5;break;
+ 212   4              case 15:Max_shi = 2;break;
+ 213   4              default:Max_shi = 10;break;
+ 214   4            }
+ 215   3            if(Max_shi != 10)
+ 216   3              Set_num = 1;
+ 217   3            while(x)
+ 218   3              x = Key_Scanf();
+ 219   3          }
+ 220   2        }
+ 221   1        //
+ 222   1        else if(Dis_Mod == 1 && Set_num == 1 && x)
+ 223   1        {
+ 224   2          Delay(10);
+ 225   2          if(Dis_Mod == 1 && Set_num == 1 && x)
+ 226   2          {
+ 227   3            switch(x)
+ 228   3            {
+ 229   4              case 4:Max_ge = 9;break;
+ 230   4              case 5:Max_ge = 6;break;
+ 231   4              case 6:Max_ge = 3;break;
+ 232   4              case 7:Max_ge = 0;break;
+ 233   4              case 9:Max_ge = 7;break;
+ 234   4              case 10:Max_ge = 4;break;
+ 235   4              case 11:Max_ge = 1;break;
+ 236   4              case 13:Max_ge = 8;break;
+ 237   4              case 14:Max_ge = 5;break;
+ 238   4              case 15:Max_ge = 2;break;
+ 239   4              default:Max_ge = 10;break;
+C51 COMPILER V9.56.0.0   MAIN                                                              01/22/2022 13:09:18 PAGE 5   
+
+ 240   4            }
+ 241   3            if(Max_ge != 10)
+ 242   3              Set_num = 2;
+ 243   3            while(x)
+ 244   3              x = Key_Scanf();
+ 245   3          }
+ 246   2        }
+ 247   1        //
+ 248   1        else if(Dis_Mod == 1 && Set_num == 2 && x)
+ 249   1        {
+ 250   2          Delay(10);
+ 251   2          if(Dis_Mod == 1 && Set_num == 2 && x)
+ 252   2          {
+ 253   3            switch(x)
+ 254   3            {
+ 255   4              case 4:Min_shi = 9;break;
+ 256   4              case 5:Min_shi = 6;break;
+ 257   4              case 6:Min_shi = 3;break;
+ 258   4              case 7:Min_shi = 0;break;
+ 259   4              case 9:Min_shi = 7;break;
+ 260   4              case 10:Min_shi = 4;break;
+ 261   4              case 11:Min_shi = 1;break;
+ 262   4              case 13:Min_shi = 8;break;
+ 263   4              case 14:Min_shi = 5;break;
+ 264   4              case 15:Min_shi = 2;break;
+ 265   4              default:Min_shi = 10;break;
+ 266   4            }
+ 267   3            if(Min_shi != 10)
+ 268   3              Set_num = 3;
+ 269   3            while(x)
+ 270   3              x = Key_Scanf();
+ 271   3          }
+ 272   2        }
+ 273   1        //
+ 274   1        else if(Dis_Mod == 1 && Set_num == 3 && x)
+ 275   1        {
+ 276   2          Delay(10);
+ 277   2          if(Dis_Mod == 1 && Set_num == 3 && x)
+ 278   2          {
+ 279   3            switch(x)
+ 280   3            {
+ 281   4              case 4:Min_ge = 9;break;
+ 282   4              case 5:Min_ge = 6;break;
+ 283   4              case 6:Min_ge = 3;break;
+ 284   4              case 7:Min_ge = 0;break;
+ 285   4              case 9:Min_ge = 7;break;
+ 286   4              case 10:Min_ge = 4;break;
+ 287   4              case 11:Min_ge = 1;break;
+ 288   4              case 13:Min_ge = 8;break;
+ 289   4              case 14:Min_ge = 5;break;
+ 290   4              case 15:Min_ge = 2;break;
+ 291   4              default:Min_ge = 10;break;
+ 292   4            }
+ 293   3            if(Min_ge != 10)
+ 294   3              Set_num = 4;
+ 295   3            while(x)
+ 296   3              x = Key_Scanf();
+ 297   3          }
+ 298   2        }
+ 299   1        //
+ 300   1        else if(Set_num == 4 && x == 8)
+ 301   1        {
+C51 COMPILER V9.56.0.0   MAIN                                                              01/22/2022 13:09:18 PAGE 6   
+
+ 302   2          Delay(10);
+ 303   2          if(Set_num == 4 && x == 8)
+ 304   2          {
+ 305   3            if(Max_shi * 10 + Max_ge < Min_shi * 10 + Min_ge)
+ 306   3            {
+ 307   4              L2_Flag = 0;
+ 308   4            }
+ 309   3            else
+ 310   3            {
+ 311   4              T_max = Max_shi * 10 + Max_ge;
+ 312   4              T_min = Min_shi * 10 + Min_ge;
+ 313   4              Max_shi = 0;
+ 314   4              Max_ge = 0;
+ 315   4              Min_shi = 0;
+ 316   4              Min_ge = 0;
+ 317   4              Set_num = 0;
+ 318   4              L2_Flag = 1;
+ 319   4              Dis_Mod = 0;
+ 320   4            }
+ 321   3            while(x == 8)
+ 322   3              x = Key_Scanf();
+ 323   3          }
+ 324   2        }
+ 325   1        while(x)
+ 326   1        {
+ 327   2          x = Key_Scanf();
+ 328   2          Display();
+ 329   2        }
+ 330   1        TR0 = 1;
+ 331   1      }
+ 332          
+ 333          void LED_Work(void)
+ 334          {
+ 335   1        TR0 = 0;
+ 336   1        InitHC138(4);
+ 337   1        L1 = L1_Flag;
+ 338   1        L2 = L2_Flag;
+ 339   1        TR1 = 1;
+ 340   1      }
+ 341          
+ 342          void main(void)
+ 343          {
+ 344   1        InputP0(5,0x00);
+ 345   1        InputP0(4,0xFF);
+ 346   1        Init_T0();
+ 347   1        while(1)
+ 348   1        {
+ 349   2          LED_Work();
+ 350   2          Key_Work();
+ 351   2          Display();
+ 352   2        }
+ 353   1      }
+ 354          
+ 355          void T0_ser(void) interrupt 1
+ 356          {
+ 357   1        TH0 = (65536 - 10000) / 256;
+ 358   1        TL0 = (65536 - 10000) % 256;
+ 359   1        ++Count_10ms;
+ 360   1        if(Count_10ms == Dtime_10ms)
+ 361   1        {
+ 362   2          L1_Flag = ~L1_Flag;
+ 363   2          Count_10ms = 0;
+C51 COMPILER V9.56.0.0   MAIN                                                              01/22/2022 13:09:18 PAGE 7   
+
+ 364   2        }
+ 365   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1625    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     12       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

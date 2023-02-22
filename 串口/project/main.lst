@@ -1,0 +1,116 @@
+C51 COMPILER V9.52.0.0   MAIN                                                              05/06/2018 11:06:44 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\main.obj
+COMPILER INVOKED BY: D:\Keil_v4\C51\BIN\C51.EXE ..\c and h\main.c BROWSE DEBUG OBJECTEXTEND PRINT(.\main.lst) TABS(2) OB
+                    -JECT(.\main.obj)
+
+line level    source
+
+   1          #include <stc15.h>
+   2          #include "uart.h"
+   3          
+   4          typedef unsigned char u8;
+   5          typedef unsigned int u16;
+   6          
+   7          
+   8          u8 code  smg_duan[]={0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71};
+   9          u8 xdata smg_wei[8]={0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80};
+  10            
+  11          
+  12          bit tx_flag;
+  13          
+  14          bit key_flag;
+  15          u8 key_value;
+  16          
+  17          u8 xdata rx_table[8];
+  18          
+  19          void Timer2Init(void)   //1ms
+  20          {
+  21   1        AUXR |= 0x04;   
+  22   1        T2L = 0xCD;   
+  23   1        T2H = 0xD4;   
+  24   1        AUXR |= 0x10;   
+  25   1        IE2|=1<<2;
+  26   1      }
+  27          
+  28          void uart_rx_driver()
+  29          {
+  30   1          
+  31   1      }
+  32          void display_driver()
+  33          {
+  34   1        rx_table[0]=smg_duan[uart_rx_buffer[0]-'0'];
+  35   1        rx_table[1]=smg_duan[uart_rx_buffer[1]-'0'];
+  36   1        rx_table[2]=smg_duan[uart_rx_buffer[2]-'0'];
+  37   1        rx_table[3]=smg_duan[uart_rx_buffer[3]-'0'];
+  38   1        rx_table[4]=smg_duan[uart_rx_buffer[4]-'0'];
+  39   1        rx_table[5]=smg_duan[uart_rx_buffer[5]-'0'];
+  40   1        rx_table[6]=smg_duan[uart_rx_buffer[6]-'0'];
+  41   1        rx_table[7]=smg_duan[uart_rx_buffer[7]-'0'];
+  42   1      }
+  43          void main()
+  44          {
+  45   1        u8 i;
+  46   1        UartInit();
+  47   1        Timer2Init();
+  48   1        
+  49   1        while(1)
+  50   1        {
+  51   2          display_driver();
+  52   2          if(tx_flag)
+  53   2          {
+  54   3            tx_flag=0;
+C51 COMPILER V9.52.0.0   MAIN                                                              05/06/2018 11:06:44 PAGE 2   
+
+  55   3            for(i=0;i<8;i++)
+  56   3            {
+  57   4              SendData(uart_rx_buffer[i]);
+  58   4            }
+  59   3          }
+  60   2        }
+  61   1      }
+  62          void Timer2Routine()interrupt 12
+  63          {
+  64   1        static u16 i=0,smg_count,tx_count;
+  65   1        smg_count++;tx_count++;
+  66   1        if(smg_count==3)
+  67   1        {
+  68   2          smg_count=0;
+  69   2          P2=0xe0;P0=0;P2=0;
+  70   2          P2=0xe0;P0=~rx_table[i];P2=0;
+  71   2          P2=0xc0;P0=smg_wei[i];P2=0;
+  72   2          i++;
+  73   2          if(i==8)i=0;
+  74   2        }
+  75   1        if(tx_count==1000)
+  76   1        {
+  77   2          tx_count=0;
+  78   2          tx_flag=1;
+  79   2        }
+  80   1      }
+  81          
+  82          
+  83          
+  84          
+  85          
+  86          
+  87          
+  88          
+  89          
+  90          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    267    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =     16    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      7       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

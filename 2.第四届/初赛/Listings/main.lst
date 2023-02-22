@@ -1,0 +1,283 @@
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 11:41:22 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "STC15F2K60S2.H"
+   2          #include "iic.h"
+   3          #include "ds1302.h"
+   4          #include "24C02.H"
+   5          #include "PCF8591.H"
+   6          #include "my.h"
+   7          
+   8          sbit L1 = P0^0;
+   9          sbit L2 = P0^1;
+  10          sbit S4 = P3^3;
+  11          sbit S5 = P3^2;
+  12          sbit S6 = P3^1;
+  13          sbit S7 = P3^0;
+  14          sbit RELAY = P0^4;
+  15          sbit BUZZ = P0^6;
+  16          
+  17          code unsigned char duan[]={0xc0, 0xf9, 0xa4, 0xb0, 0x99, 0x92, 0x82, 0xf8, 0x80, 0x90, 0x88, 0x83, 0xc6, 0
+             -xa1, 0x86, 0x8e};
+  18          unsigned char Dis_Mod = 0;  //显示模式，0代表时间湿度，1代表湿度阈值设定
+  19          unsigned char Work_Mod = 0; //工作模式，0代表自动，1代表手动
+  20          unsigned char Time[] = {22,7,1,23,8,30,0};
+  21          unsigned char Wet_Now = 0;
+  22          unsigned char Wet_Set = 50;
+  23          unsigned char Set_Temp = 50;
+  24          bit Relay_Flag = 0;
+  25          bit Buzz_Flag = 1;
+  26          
+  27          void Display(void)
+  28          {
+  29   1        unsigned char i;
+  30   1        if(Dis_Mod == 0)
+  31   1        {
+  32   2          Ds1302_Read_Time(Time);
+  33   2          Wet_Now = (unsigned char)((double)AD_Rb2_Vol()/255*100 - 0.5);
+  34   2          for(i = 0; i < 8; i++)
+  35   2          {
+  36   3            InputP0(6,0x01<<i);
+  37   3            switch(i)
+  38   3            {
+  39   4              case 0:InputP0(7,duan[Time[4]/10]);break;
+  40   4              case 1:InputP0(7,duan[Time[4]%10]);break;
+  41   4              case 2:InputP0(7,0xBF);break;
+  42   4              case 3:InputP0(7,duan[Time[5]/10]);break;
+  43   4              case 4:InputP0(7,duan[Time[5]%10]);break;
+  44   4              case 6:InputP0(7,duan[Wet_Now/10]);break;
+  45   4              case 7:InputP0(7,duan[Wet_Now%10]);break;
+  46   4            }
+  47   3            Delay(8);
+  48   3            InputP0(7,0xFF);
+  49   3          }
+  50   2        }
+  51   1        if(Dis_Mod == 1)
+  52   1        {
+  53   2          for(i = 0; i < 8; i++)
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 11:41:22 PAGE 2   
+
+  54   2          {
+  55   3            InputP0(6,0x01<<i);
+  56   3            switch(i)
+  57   3            {
+  58   4              case 0:InputP0(7,0xBF);break;
+  59   4              case 1:InputP0(7,0xBF);break;
+  60   4              case 6:InputP0(7,duan[Set_Temp/10]);break;
+  61   4              case 7:InputP0(7,duan[Set_Temp%10]);break;
+  62   4            }
+  63   3            Delay(8);
+  64   3            InputP0(7,0xFF);
+  65   3          }
+  66   2        }
+  67   1      }
+  68          
+  69          void Wet_Work()
+  70          {
+  71   1        Wet_Now = (unsigned char)((double)AD_Rb2_Vol()/255*100 - 0.5);
+  72   1        if(Work_Mod == 0)
+  73   1        {
+  74   2          InitHC138(4);
+  75   2          L1 = 0;
+  76   2          L2 = 1;
+  77   2          if(Wet_Now < Wet_Set)
+  78   2          {
+  79   3            InitHC138(5);
+  80   3            BUZZ = 0;
+  81   3            RELAY = 1;
+  82   3          }
+  83   2          if(Wet_Now >= Wet_Set)
+  84   2          {
+  85   3            InitHC138(5);
+  86   3            BUZZ = 0;
+  87   3            RELAY = 0;
+  88   3          }
+  89   2        }
+  90   1        if(Work_Mod == 1)
+  91   1        {
+  92   2          InitHC138(4);
+  93   2          L1 = 1;
+  94   2          L2 = 0;
+  95   2          if(Wet_Now < Wet_Set && Buzz_Flag == 1)
+  96   2          {
+  97   3            InitHC138(5);
+  98   3            BUZZ = 1;
+  99   3          }
+ 100   2          if(Buzz_Flag == 0 || Wet_Now >= Wet_Set)
+ 101   2          {
+ 102   3            InitHC138(5);
+ 103   3            BUZZ = 0;
+ 104   3          }
+ 105   2          if(Relay_Flag == 1)
+ 106   2          {
+ 107   3            InitHC138(5);
+ 108   3            RELAY = 1;
+ 109   3          }
+ 110   2          else
+ 111   2          {
+ 112   3            InitHC138(5);
+ 113   3            RELAY = 0;
+ 114   3          }
+ 115   2        }
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 11:41:22 PAGE 3   
+
+ 116   1      }
+ 117          
+ 118          void Key_Scanf(void)
+ 119          {
+ 120   1        if(S7 == 0)
+ 121   1        {
+ 122   2          Delay(10);
+ 123   2          if(S7 == 0)
+ 124   2          {
+ 125   3            Work_Mod = (Work_Mod + 1) % 2;
+ 126   3            while(S7 == 0)
+ 127   3            {
+ 128   4              Display();
+ 129   4              Wet_Work();
+ 130   4            }
+ 131   3          }
+ 132   2        }
+ 133   1        
+ 134   1        if(Work_Mod == 0)
+ 135   1        {
+ 136   2          if(Dis_Mod == 0 && S6 == 0)
+ 137   2          {
+ 138   3            Delay(10);
+ 139   3            if(S6 == 0)
+ 140   3            {
+ 141   4              Dis_Mod = 1;
+ 142   4              while(S6 == 0)
+ 143   4              {
+ 144   5                Display();
+ 145   5                Wet_Work();
+ 146   5              }
+ 147   4            }
+ 148   3          }
+ 149   2          if(Dis_Mod == 1 && S6 == 0)
+ 150   2          {
+ 151   3            Delay(10);
+ 152   3            if(S6 == 0)
+ 153   3            {
+ 154   4              Wet_Set = Set_Temp;
+ 155   4              Write_Byte_24C02(0x00,Set_Temp);
+ 156   4              Dis_Mod = 0;
+ 157   4              while(S6 == 0)
+ 158   4              {
+ 159   5                Display();
+ 160   5                Wet_Work();
+ 161   5              }
+ 162   4            }
+ 163   3          }
+ 164   2          if(Dis_Mod == 1 && S5 == 0)
+ 165   2          {
+ 166   3            Delay(10);
+ 167   3            if(S5 == 0)
+ 168   3            {
+ 169   4              if(Set_Temp <= 98)
+ 170   4                Set_Temp = Set_Temp + 1;
+ 171   4              while(S5 == 0)
+ 172   4              {
+ 173   5                Display();
+ 174   5                Wet_Work();
+ 175   5              }
+ 176   4            }
+ 177   3          }
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 11:41:22 PAGE 4   
+
+ 178   2          if(Dis_Mod == 1 && S4 == 0)
+ 179   2          {
+ 180   3            Delay(10);
+ 181   3            if(S4 == 0)
+ 182   3            {
+ 183   4              if(Set_Temp >= 1)
+ 184   4                Set_Temp = Set_Temp - 1;
+ 185   4              while(S4 == 0)
+ 186   4              {
+ 187   5                Display();
+ 188   5                Wet_Work();
+ 189   5              }
+ 190   4            }
+ 191   3          }
+ 192   2        }
+ 193   1        if(Work_Mod == 1)
+ 194   1        {
+ 195   2          if(S6 == 0)
+ 196   2          {
+ 197   3            Delay(10);
+ 198   3            if(S6 == 0)
+ 199   3            {
+ 200   4              Buzz_Flag = ~Buzz_Flag;
+ 201   4              while(S6 == 0)
+ 202   4              {
+ 203   5                Display();
+ 204   5                Wet_Work();
+ 205   5              }
+ 206   4            }
+ 207   3          }
+ 208   2          if(S5 == 0)
+ 209   2          {
+ 210   3            Delay(10);
+ 211   3            if(S5 == 0)
+ 212   3            {
+ 213   4              Relay_Flag = 1;
+ 214   4              while(S5 == 0)
+ 215   4              {
+ 216   5                Display();
+ 217   5                Wet_Work();
+ 218   5              }
+ 219   4            }
+ 220   3          }
+ 221   2          if(S4 == 0)
+ 222   2          {
+ 223   3            Delay(10);
+ 224   3            if(S4 == 0)
+ 225   3            {
+ 226   4              Relay_Flag = 0;
+ 227   4              while(S4 == 0)
+ 228   4              {
+ 229   5                Display();
+ 230   5                Wet_Work();
+ 231   5              }
+ 232   4            }
+ 233   3          }
+ 234   2        }
+ 235   1      }
+ 236          
+ 237          void main(void)
+ 238          {
+ 239   1        InputP0(5,0x00);
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 11:41:22 PAGE 5   
+
+ 240   1        InputP0(4,0xFF);
+ 241   1        Ds1302_Write_Time(Time);
+ 242   1        Wet_Set = Read_Byte_24C02(0x00);
+ 243   1        Set_Temp = Wet_Set;
+ 244   1        while(1)
+ 245   1        {
+ 246   2          Display();
+ 247   2          Wet_Work();
+ 248   2          Key_Scanf();
+ 249   2        }
+ 250   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    770    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     12       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,1 @@
+unsigned char AD_Rd1(void);

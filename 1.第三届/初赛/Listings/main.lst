@@ -1,0 +1,197 @@
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 13:41:26 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "STC15F2K60S2.H"
+   2          #include "my.h"
+   3          #include "PCF8591.H"
+   4          
+   5          sbit RELAY = P0^4;
+   6          sbit BUZZ = P0^6;
+   7          sbit S7 = P3^0;
+   8          sbit S6 = P3^1;
+   9          sbit L1 = P0^0;
+  10          
+  11          code unsigned char duan[]={0xc0, 0xf9, 0xa4, 0xb0, 0x99, 0x92, 0x82, 0xf8, 0x80, 0x90, 0x88, 0x83, 0xc6, 0
+             -xa1, 0x86, 0x8e};
+  12          
+  13          unsigned char Dis_Mod = 0;
+  14          unsigned int Price = 50;  //每升价格（分）
+  15          unsigned int Water_All = 0; //10ml
+  16          unsigned int Price_All = 0; //分
+  17          unsigned char Count_10ms = 0;
+  18          
+  19          bit Relay_Flag = 0; //出水状态，1出水，0停止出水
+  20          bit LED1_Flag = 1;
+  21          
+  22          
+  23          void Init_T0(void)
+  24          {
+  25   1        TMOD = 0x01;
+  26   1        AUXR = 0x00;
+  27   1        TH0 = (65536 - 10000) / 256;
+  28   1        TL0 = (65536 - 10000) % 256;
+  29   1        TR0 = 0;
+  30   1        EA = 1;
+  31   1        ET0 = 1;
+  32   1      }
+  33          
+  34          
+  35          void Display(void)
+  36          {
+  37   1        unsigned char i;
+  38   1        if(Dis_Mod == 0)
+  39   1        {
+  40   2          for(i = 0; i < 8; i++)
+  41   2          {
+  42   3            InputP0(6,0x01<<i);
+  43   3            switch(i)
+  44   3            {
+  45   4              case 1:InputP0(7,duan[Price/100]&0x7F);break;
+  46   4              case 2:InputP0(7,duan[Price%100/10]);break;
+  47   4              case 3:InputP0(7,duan[Price%10]);break;
+  48   4              case 4:InputP0(7,duan[Water_All/1000]);break;
+  49   4              case 5:InputP0(7,duan[Water_All%1000/100]&0x7F);break;
+  50   4              case 6:InputP0(7,duan[Water_All%100/10]);break;
+  51   4              case 7:InputP0(7,duan[Water_All%10]);break;
+  52   4            }
+  53   3            Delay(8);
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 13:41:26 PAGE 2   
+
+  54   3            InputP0(7,0xFF);
+  55   3          }
+  56   2        }
+  57   1        if(Dis_Mod == 1)
+  58   1        {
+  59   2          for(i = 0; i < 8; i++)
+  60   2          {
+  61   3            InputP0(6,0x01<<i);
+  62   3            switch(i)
+  63   3            {
+  64   4              case 1:InputP0(7,duan[Price/100]&0x7F);break;
+  65   4              case 2:InputP0(7,duan[Price%100/10]);break;
+  66   4              case 3:InputP0(7,duan[Price%10]);break;
+  67   4              case 4:InputP0(7,duan[Price_All/1000]);break;
+  68   4              case 5:InputP0(7,duan[Price_All%1000/100]&0x7F);break;
+  69   4              case 6:InputP0(7,duan[Price_All%100/10]);break;
+  70   4              case 7:InputP0(7,duan[Price_All%10]);break;
+  71   4            }
+  72   3            Delay(8);
+  73   3            InputP0(7,0xFF);
+  74   3          }
+  75   2        }
+  76   1      }
+  77          
+  78          void Key_Scanf(void)
+  79          {
+  80   1        if(Dis_Mod == 0 && S7 == 0 && TR0 == 0)
+  81   1        {
+  82   2          Delay(10);
+  83   2          if(S7 == 0)
+  84   2          {
+  85   3            if(Water_All != 0)
+  86   3              Water_All = 0;
+  87   3            TR0 = 1;
+  88   3            Relay_Flag = 1;
+  89   3            InitHC138(5);
+  90   3            RELAY = Relay_Flag;
+  91   3            BUZZ = 0;
+  92   3            while(S7 == 0)
+  93   3              Display();
+  94   3          }
+  95   2        }
+  96   1        if(Dis_Mod == 0 && S6 == 0 && TR0 == 1)
+  97   1        {
+  98   2          Delay(10);
+  99   2          if(S6 == 0)
+ 100   2          {
+ 101   3            TR0 = 0;
+ 102   3            Relay_Flag = 0;
+ 103   3            InitHC138(5);
+ 104   3            RELAY = Relay_Flag;
+ 105   3            BUZZ = 0;
+ 106   3            Dis_Mod = 1;
+ 107   3            while(S6 == 0)
+ 108   3              Display();
+ 109   3          }
+ 110   2        }
+ 111   1        if(Dis_Mod == 1 && S7 == 0 && TR0 == 0)
+ 112   1        {
+ 113   2          Delay(10);
+ 114   2          if(S7 == 0)
+ 115   2          {
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 13:41:26 PAGE 3   
+
+ 116   3            Dis_Mod = 0;
+ 117   3            while(S7 == 0)
+ 118   3              Display();
+ 119   3          }
+ 120   2        }
+ 121   1      }
+ 122          
+ 123          void Work(void)
+ 124          {
+ 125   1        if(AD_Rd1() >= 64)
+ 126   1          LED1_Flag = 1;
+ 127   1        else 
+ 128   1          LED1_Flag = 0;
+ 129   1        InitHC138(4);
+ 130   1        L1 = LED1_Flag;
+ 131   1      }
+ 132          
+ 133          void main(void)
+ 134          {
+ 135   1        InputP0(5,0x00);
+ 136   1        InputP0(4,0xFF);
+ 137   1        Init_T0();
+ 138   1        while(1)
+ 139   1        {
+ 140   2          Display();
+ 141   2          Work();
+ 142   2          Key_Scanf();
+ 143   2        }
+ 144   1      }
+ 145          
+ 146          void T0_ser(void) interrupt 1
+ 147          {
+ 148   1        TH0 = (65536 - 10000) / 256;
+ 149   1        TL0 = (65536 - 10000) % 256;
+ 150   1        ++Count_10ms;
+ 151   1        if(Count_10ms == 10)
+ 152   1        {
+ 153   2          ++Water_All;
+ 154   2          if(Water_All == 9999)
+ 155   2          {
+ 156   3            TR0 = 0;
+ 157   3            Relay_Flag = 0;
+ 158   3            InitHC138(5);
+ 159   3            RELAY = Relay_Flag;
+ 160   3            BUZZ = 0;
+ 161   3            Dis_Mod = 1;
+ 162   3          }
+ 163   2          Price_All = (unsigned int)((double)Water_All * Price / 100 + 0.5);
+ 164   2          Count_10ms = 0;
+ 165   2        }
+ 166   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    844    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      8       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V9.56.0.0   MAIN                                                              01/23/2022 13:41:26 PAGE 4   
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

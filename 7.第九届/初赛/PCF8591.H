@@ -1,0 +1,1 @@
+unsigned char AD_PCF8591(unsigned char channel);

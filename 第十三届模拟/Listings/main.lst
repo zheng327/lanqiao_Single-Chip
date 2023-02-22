@@ -1,0 +1,253 @@
+C51 COMPILER V9.56.0.0   MAIN                                                              04/08/2022 21:44:58 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "STC15F2K60S2.H"
+   2          #include "iic.h"
+   3          #include "my.h"
+   4          
+   5          sbit S4 = P3^3;
+   6          sbit S5 = P3^2;
+   7          sbit S6 = P3^1;
+   8          sbit S7 = P3^0;
+   9          
+  10          sbit L1 = P0^0;
+  11          sbit L2 = P0^1;
+  12          sbit L3 = P0^2;
+  13          sbit L4 = P0^3;
+  14          sbit L5 = P0^4;
+  15          sbit L6 = P0^5;
+  16          sbit L7 = P0^6;
+  17          sbit L8 = P0^7;
+  18          
+  19          code unsigned char duan[]={0xc0, 0xf9, 0xa4, 0xb0, 0x99, 0x92, 0x82, 0xf8, 0x80, 0x90, 0x88, 0x83, 0xc6, 0
+             -xa1, 0x86, 0x8e};
+  20          unsigned int Count_10ms = 0;
+  21          bit Count_Flag = 0;
+  22          unsigned int Count_long = 0;
+  23          long Freq = 0;
+  24          long Freq_Cache = 0;
+  25          long T_1us = 0;
+  26          unsigned int Vol1 = 0,Vol3 = 0;
+  27          unsigned int Vol3_Cache = 0;
+  28          unsigned char Channel_Set = 1;
+  29          unsigned char Dis_Mod = 0;
+  30          bit LED_Work_Flag = 1;
+  31          
+  32          void Init_T0(void)
+  33          {
+  34   1        TMOD = 0x15;
+  35   1        TH0 = 0x00;
+  36   1        TL0 = 0x00;
+  37   1        TH1 = (65536 - 10000) / 256;  //10ms
+  38   1        TL1 = (65536 - 10000) % 256;
+  39   1        ET0 = 0;
+  40   1        ET1 = 1;
+  41   1        EA = 1;
+  42   1        TR0 = 1;
+  43   1        TR1 = 1;
+  44   1      }
+  45          
+  46          void Display(void)
+  47          {
+  48   1        unsigned char i;
+  49   1        if(Dis_Mod == 0)
+  50   1        {
+  51   2          for(i = 0; i < 8; i++)
+  52   2          {
+  53   3            InputP0(6,0x01<<i);
+C51 COMPILER V9.56.0.0   MAIN                                                              04/08/2022 21:44:58 PAGE 2   
+
+  54   3            switch(i)
+  55   3            {
+  56   4              case 0:InputP0(7,duan[0x0F]);break;
+  57   4              case 1:if(Freq >= 1000000) InputP0(7,duan[Freq/1000000]); break;
+  58   4              case 2:if(Freq >= 100000) InputP0(7,duan[Freq%1000000/100000]); break;
+  59   4              case 3:if(Freq >= 10000) InputP0(7,duan[Freq%100000/10000]); break;
+  60   4              case 4:if(Freq >= 1000) InputP0(7,duan[Freq%10000/1000]); break;
+  61   4              case 5:if(Freq >= 100) InputP0(7,duan[Freq%1000/100]); break;
+  62   4              case 6:if(Freq >= 10) InputP0(7,duan[Freq%100/10]); break;
+  63   4              case 7:InputP0(7,duan[Freq%10]);break;
+  64   4            }
+  65   3            Delay(10);
+  66   3            InputP0(7,0xFF);
+  67   3          }
+  68   2        }
+  69   1        
+  70   1        if(Dis_Mod == 1)
+  71   1        {
+  72   2          for(i = 0; i < 8; i++)
+  73   2          {
+  74   3            InputP0(6,0x01<<i);
+  75   3            switch(i)
+  76   3            {
+  77   4              case 0:InputP0(7,0xC8);break;
+  78   4              case 1:if(T_1us >= 1000000) InputP0(7,duan[T_1us/1000000]); break;
+  79   4              case 2:if(T_1us >= 100000) InputP0(7,duan[T_1us%1000000/100000]); break;
+  80   4              case 3:if(T_1us >= 10000) InputP0(7,duan[T_1us%100000/10000]); break;
+  81   4              case 4:if(T_1us >= 1000) InputP0(7,duan[T_1us%10000/1000]); break;
+  82   4              case 5:if(T_1us >= 100) InputP0(7,duan[T_1us%1000/100]); break;
+  83   4              case 6:if(T_1us >= 10) InputP0(7,duan[T_1us%100/10]); break;
+  84   4              case 7:InputP0(7,duan[T_1us%10]);break;
+  85   4            }
+  86   3            Delay(10);
+  87   3            InputP0(7,0xFF);
+  88   3          }
+  89   2        }
+  90   1        
+  91   1        if(Dis_Mod == 2)
+  92   1        {
+  93   2          for(i = 0; i < 8; i++)
+  94   2          {
+  95   3            InputP0(6,0x01<<i);
+  96   3            switch(i)
+  97   3            {
+  98   4              case 0:InputP0(7,0xC1);break;
+  99   4              case 1:InputP0(7,0xBF);break;
+ 100   4              case 2:InputP0(7,duan[Channel_Set]);break;
+ 101   4              case 3:InputP0(7,0xFF);break;
+ 102   4              case 4:InputP0(7,0xFF);break;
+ 103   4              case 5:if(Channel_Set == 1) InputP0(7,duan[Vol1/100]&0x7F);else InputP0(7,duan[Vol3/100]&0x7F);break;
+ 104   4              case 6:if(Channel_Set == 1) InputP0(7,duan[Vol1%100/10]);else InputP0(7,duan[Vol3%100/10]);break;
+ 105   4              case 7:if(Channel_Set == 1) InputP0(7,duan[Vol1%10]);else InputP0(7,duan[Vol3%10]);break;
+ 106   4            }
+ 107   3            Delay(10);
+ 108   3            InputP0(7,0xFF);
+ 109   3          }
+ 110   2        }
+ 111   1      }
+ 112          
+ 113          void Key_Scanf(void)
+ 114          {
+ 115   1        if(S4 == 0)
+C51 COMPILER V9.56.0.0   MAIN                                                              04/08/2022 21:44:58 PAGE 3   
+
+ 116   1        {
+ 117   2          Delay(10);
+ 118   2          if(S4 == 0)
+ 119   2          {
+ 120   3            while(S4 == 0)
+ 121   3              Display();
+ 122   3            Dis_Mod = (Dis_Mod + 1) % 3;
+ 123   3          }
+ 124   2        }
+ 125   1        if(S5 == 0 && Dis_Mod == 2)
+ 126   1        {
+ 127   2          Delay(10);
+ 128   2          if(S5 == 0)
+ 129   2          {
+ 130   3            while(S5 == 0)
+ 131   3              Display();
+ 132   3            if(Channel_Set == 1)
+ 133   3              Channel_Set = 3;
+ 134   3            else if(Channel_Set == 3)
+ 135   3              Channel_Set = 1;
+ 136   3          }
+ 137   2        }
+ 138   1        if(S6 == 0)
+ 139   1        {
+ 140   2          Delay(10);
+ 141   2          if(S6 == 0)
+ 142   2          {
+ 143   3            while(S6 == 0)
+ 144   3              Display();
+ 145   3            Vol3_Cache = Vol3;
+ 146   3          }
+ 147   2        }
+ 148   1        if(S7 == 0)
+ 149   1        {
+ 150   2          Delay(10);
+ 151   2          if(S7 == 0)
+ 152   2          {
+ 153   3            Count_Flag = 1;
+ 154   3            while(S7 == 0)
+ 155   3              Display();
+ 156   3            if(Count_long >= 100)
+ 157   3              LED_Work_Flag = ~LED_Work_Flag;
+ 158   3            Count_Flag = 0;
+ 159   3            Freq_Cache = Freq;
+ 160   3          }
+ 161   2        }
+ 162   1      }
+ 163          
+ 164          void work(void)
+ 165          {
+ 166   1        if(Channel_Set == 1)
+ 167   1        {
+ 168   2          Vol1 = (unsigned int)((float)ADC_PCF8591(1) * 5 / 255 * 100 + 0.5);
+ 169   2        }
+ 170   1        if(Channel_Set == 3)
+ 171   1        {
+ 172   2          Vol3 = (unsigned int)((float)ADC_PCF8591(3) * 5 / 255 * 100 + 0.5);
+ 173   2        }
+ 174   1        if(LED_Work_Flag == 1)
+ 175   1        {
+ 176   2          InitHC138(4);
+ 177   2          if(Vol3 > Vol3_Cache)
+C51 COMPILER V9.56.0.0   MAIN                                                              04/08/2022 21:44:58 PAGE 4   
+
+ 178   2            L1 = 0;
+ 179   2          if(Freq > Freq_Cache)
+ 180   2            L2 = 0;
+ 181   2          if(Dis_Mod == 0)
+ 182   2            L3 = 0;
+ 183   2          else  if(Dis_Mod == 1)
+ 184   2            L4 = 0;
+ 185   2          else if(Dis_Mod == 2)
+ 186   2            L5 = 0;
+ 187   2          L6 = 1;L7 = 1;L8 = 1;
+ 188   2        }
+ 189   1        else
+ 190   1          InputP0(4,0xFF);
+ 191   1      }
+ 192          
+ 193          void  main(void)
+ 194          {
+ 195   1        InputP0(5,0x00);
+ 196   1        InputP0(4,0xFF);
+ 197   1        Init_T0();
+ 198   1        while(1)
+ 199   1        {
+ 200   2          work();
+ 201   2          Key_Scanf();
+ 202   2          Display();
+ 203   2        }
+ 204   1      }
+ 205          
+ 206          void T1_ser(void) interrupt 3
+ 207          {
+ 208   1        TH1 = (65536 - 10000) / 256;
+ 209   1        TL1 = (65536 - 10000) % 256;
+ 210   1        if(Count_Flag == 1)
+ 211   1          ++Count_long;
+ 212   1        if(Count_Flag == 0)
+ 213   1          Count_long = 0;
+ 214   1        if(++Count_10ms == 200)
+ 215   1        {
+ 216   2          Freq = (TH0 * 256 + TL0) / 2;
+ 217   2          T_1us = 1000000 / Freq;
+ 218   2          TH0 = 0x00;
+ 219   2          TL0 = 0x00;
+ 220   2          Count_10ms = 0;
+ 221   2        }
+ 222   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1943    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     24       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

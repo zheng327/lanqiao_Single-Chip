@@ -1,0 +1,250 @@
+C51 COMPILER V9.56.0.0   MAIN                                                              01/21/2022 13:48:04 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "STC15F2K60S2.H"
+   2          #include "ds1302.h"
+   3          #include "onewire.h"
+   4          #include "my.h"
+   5          
+   6          sbit L1 = P0^0;
+   7          sbit S7 = P3^0;
+   8          sbit S6 = P3^1;
+   9          sbit S5 = P3^2;
+  10          sbit S4 = P3^3;
+  11          
+  12          code unsigned char duan[]={0xc0, 0xf9, 0xa4, 0xb0, 0x99, 0x92, 0x82, 0xf8, 0x80, 0x90, 0x88, 0x83, 0xc6, 0
+             -xa1, 0x86, 0x8e};
+  13          unsigned char Time[] = {22,5,1,21,23,59,50};
+  14          unsigned char Temp[] = {0,0,0,0,0,0,0,0,0,0};
+  15          unsigned char Temp_Index = 0;
+  16          unsigned char Dis_Mod = 0;
+  17          unsigned char Time_Set[] = {1,5,30,60};
+  18          unsigned char Set_Index = 0;
+  19          unsigned char Set_1s = 1;
+  20          unsigned char Count_50ms = 0;
+  21          unsigned char Count_1s = 0;
+  22          
+  23          bit Dis_Flag = 0;
+  24          bit LED_Flag = 0;
+  25          bit Comp_Flag = 0;
+  26          
+  27          void Init_Timer(void)
+  28          {
+  29   1        TMOD = 0x11;
+  30   1        AUXR = 0x00;
+  31   1        TH0 = (65536 - 50000) / 256;
+  32   1        TL0 = (65536 - 50000) % 256;
+  33   1        TH1 = 0;
+  34   1        TL1 = 0;
+  35   1        TR0 = 0;
+  36   1        TR1 = 0;
+  37   1        EA = 1;
+  38   1        ET0 = 1;
+  39   1        ET1 = 1;
+  40   1      }
+  41          
+  42          void Display(void)
+  43          {
+  44   1        unsigned char i;
+  45   1        if(Dis_Mod == 0)
+  46   1        {
+  47   2          InputP0(6,0x20);
+  48   2          InputP0(7,0xBF);
+  49   2          Delay(4);
+  50   2          InputP0(7,0xFF);
+  51   2          
+  52   2          InputP0(6,0x40);
+  53   2          InputP0(7,duan[Time_Set[Set_Index]/10]);
+C51 COMPILER V9.56.0.0   MAIN                                                              01/21/2022 13:48:04 PAGE 2   
+
+  54   2          Delay(4);
+  55   2          InputP0(7,0xFF);
+  56   2          
+  57   2          InputP0(6,0x80);
+  58   2          InputP0(7,duan[Time_Set[Set_Index]%10]);
+  59   2          Delay(4);
+  60   2          InputP0(7,0xFF);
+  61   2        }
+  62   1        else if(Dis_Mod == 1)
+  63   1        {
+  64   2          Read_Time_Ds1302(Time);
+  65   2          for(i = 0; i < 8; i++)
+  66   2          {
+  67   3            InputP0(6,0x01<<i);
+  68   3            switch(i)
+  69   3            {
+  70   4              case 0:InputP0(7,duan[Time[4]/10]);break;
+  71   4              case 1:InputP0(7,duan[Time[4]%10]);break;
+  72   4              case 2:if(Dis_Flag) InputP0(7,0xBF);break;
+  73   4              case 3:InputP0(7,duan[Time[5]/10]);break;
+  74   4              case 4:InputP0(7,duan[Time[5]%10]);break;
+  75   4              case 5:if(Dis_Flag) InputP0(7,0xBF);break;
+  76   4              case 6:InputP0(7,duan[Time[6]/10]);break;
+  77   4              case 7:InputP0(7,duan[Time[6]%10]);break;
+  78   4            }
+  79   3            Delay(4);
+  80   3            InputP0(7,0xFF);
+  81   3          }
+  82   2        }
+  83   1        else if(Dis_Mod == 2)
+  84   1        {
+  85   2          for(i = 0; i < 8; i++)
+  86   2          {
+  87   3            InputP0(6,0x01<<i);
+  88   3            switch(i)
+  89   3            {
+  90   4              case 0:InputP0(7,0xBF);break;
+  91   4              case 1:InputP0(7,duan[Temp_Index/10]);break;
+  92   4              case 2:InputP0(7,duan[Temp_Index%10]);break;
+  93   4              case 3:InputP0(7,0xFF);break;
+  94   4              case 4:InputP0(7,0xFF);break;
+  95   4              case 5:InputP0(7,0xBF);break;
+  96   4              case 6:InputP0(7,duan[Temp[Temp_Index]/10]);break;
+  97   4              case 7:InputP0(7,duan[Temp[Temp_Index]%10]);break;
+  98   4            }
+  99   3            Delay(4);
+ 100   3            InputP0(7,0xFF);
+ 101   3          }
+ 102   2        }
+ 103   1      }
+ 104          
+ 105          void Key_Scanf(void)
+ 106          {
+ 107   1        if(S4 == 0 && Dis_Mod == 0)
+ 108   1        {
+ 109   2          Delay(100);
+ 110   2          if(S4 == 0)
+ 111   2          {
+ 112   3            Set_Index = (Set_Index + 1) % 4;
+ 113   3            while(S4 == 0)
+ 114   3              ;
+ 115   3          }
+C51 COMPILER V9.56.0.0   MAIN                                                              01/21/2022 13:48:04 PAGE 3   
+
+ 116   2        }
+ 117   1        if(S5 == 0 && Dis_Mod == 0)
+ 118   1        {
+ 119   2          Delay(100);
+ 120   2          if(S5 == 0)
+ 121   2          {
+ 122   3            Set_1s = Time_Set[Set_Index];
+ 123   3            Set_Index = 0;
+ 124   3            Dis_Mod = 1;
+ 125   3            TR0 = 1;
+ 126   3            while(S5 == 0)
+ 127   3              ;
+ 128   3          }
+ 129   2        }
+ 130   1        if(S6 == 0 && Dis_Mod == 2 && Comp_Flag)
+ 131   1        {
+ 132   2          Delay(100);
+ 133   2          if(S6 == 0)
+ 134   2          {
+ 135   3            InputP0(4,0xFF);
+ 136   3            Comp_Flag = 0;
+ 137   3            while(S6 == 0)
+ 138   3              ;
+ 139   3          }
+ 140   2        }
+ 141   1        if(S6 == 0 && Dis_Mod == 2 && !Comp_Flag)
+ 142   1        {
+ 143   2          Delay(100);
+ 144   2          if(S6 == 0)
+ 145   2          {
+ 146   3            Temp_Index = (Temp_Index + 1) % 10;
+ 147   3            while(S6 == 0)
+ 148   3              ;
+ 149   3          }
+ 150   2        }
+ 151   1        if(S7 == 0 && Dis_Mod == 2 && !Comp_Flag)
+ 152   1        {
+ 153   2          Delay(100);
+ 154   2          if(S7 == 0)
+ 155   2          {
+ 156   3            Temp_Index = 0;
+ 157   3            Dis_Mod = 0;
+ 158   3            while(S7 == 0)
+ 159   3              ;
+ 160   3          }
+ 161   2        }
+ 162   1      }
+ 163          
+ 164          void LED_Work(void)
+ 165          {
+ 166   1        if(Comp_Flag)
+ 167   1        {
+ 168   2          InitHC138(4);
+ 169   2          L1 = LED_Flag;
+ 170   2        }
+ 171   1        else
+ 172   1        {
+ 173   2          InitHC138(4);
+ 174   2          L1 = 1;
+ 175   2        }
+ 176   1      }
+ 177          
+C51 COMPILER V9.56.0.0   MAIN                                                              01/21/2022 13:48:04 PAGE 4   
+
+ 178          void main(void)
+ 179          {
+ 180   1        InputP0(5,0x00);
+ 181   1        InputP0(4,0xFF);
+ 182   1        Init_Timer();
+ 183   1        Write_Time_Ds1302(Time);
+ 184   1        while(1)
+ 185   1        {
+ 186   2          Display();
+ 187   2          Key_Scanf();
+ 188   2          LED_Work();
+ 189   2        }
+ 190   1      }
+ 191            
+ 192            
+ 193          
+ 194          void T0_ser(void) interrupt 1
+ 195          {
+ 196   1        TH0 = (65536 - 50000) / 256;
+ 197   1        TL0 = (65536 - 50000) % 256;
+ 198   1        Count_50ms = Count_50ms + 1;
+ 199   1        if(Count_50ms == 20)
+ 200   1        {
+ 201   2          Dis_Flag = ~Dis_Flag;
+ 202   2          LED_Flag = ~LED_Flag;
+ 203   2          if(!Comp_Flag && Dis_Mod == 1)
+ 204   2            Count_1s = Count_1s + 1;
+ 205   2          if(Count_1s == Set_1s && !Comp_Flag)
+ 206   2          {
+ 207   3            Temp[Temp_Index] = rd_temperature();
+ 208   3            Temp_Index = Temp_Index + 1;
+ 209   3            if(Temp_Index == 10)
+ 210   3            {
+ 211   4              Comp_Flag = 1;
+ 212   4              Dis_Mod = 2;
+ 213   4              Temp_Index = 0;
+ 214   4            }
+ 215   3            Count_1s = 0;
+ 216   3          }
+ 217   2          Count_50ms = 0;
+ 218   2        }
+ 219   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    787    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     27       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      3    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

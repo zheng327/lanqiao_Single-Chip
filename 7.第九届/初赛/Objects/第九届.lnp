@@ -1,0 +1,7 @@
+".\Objects\main.obj",
+".\Objects\PCF8591.obj",
+".\Objects\AT24C02.obj",
+".\Objects\iic.obj",
+".\Objects\my.obj" 
+TO ".\Objects\µÚ¾Å½ì" 
+PRINT(".\Listings\µÚ¾Å½ì.m51") RAMSIZE(256) 

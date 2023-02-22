@@ -1,0 +1,5 @@
+".\Objects\main.obj",
+".\Objects\my.obj",
+".\Objects\iic.obj" 
+TO ".\Objects\第十三届模拟" 
+PRINT(".\Listings\第十三届模拟.m51")

@@ -1,0 +1,8 @@
+".\Objects\main.obj",
+".\Objects\iic.obj",
+".\Objects\ds1302.obj",
+".\Objects\24C02.obj",
+".\Objects\PCF8591.obj",
+".\Objects\my.obj" 
+TO ".\Objects\第四届" 
+PRINT(".\Listings\第四届.m51") RAMSIZE(256) 

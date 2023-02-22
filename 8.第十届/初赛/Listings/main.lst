@@ -1,0 +1,269 @@
+C51 COMPILER V9.56.0.0   MAIN                                                              01/15/2022 17:34:43 PAGE 1   
+
+
+C51 COMPILER V9.56.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "STC15F2K60S2.H"
+   2          #include "PCF8591.H"
+   3          #include "my.h"
+   4          
+   5          sbit S4 = P3^3;
+   6          sbit S5 = P3^2;
+   7          sbit S6 = P3^1;
+   8          sbit S7 = P3^0;
+   9          sbit L1 = P0^0;
+  10          sbit L2 = P0^1;
+  11          sbit L3 = P0^2;
+  12          sbit L4 = P0^3;
+  13          sbit L5 = P0^4;
+  14          
+  15          code unsigned char duan[]={0xc0, 0xf9, 0xa4, 0xb0, 0x99, 0x92, 0x82, 0xf8, 0x80, 0x90, 0x88, 0x83, 0xc6, 0
+             -xa1, 0x86, 0x8e};
+  16          
+  17          unsigned char Dis_Mod = 0;
+  18          unsigned char DAC_Mod = 0;
+  19          unsigned char LED_On = 1;
+  20          unsigned char Dis_On = 1;
+  21          unsigned int Freq = 0;
+  22          unsigned char Count_10ms = 0;
+  23          unsigned int Rb2_vol = 0;
+  24          
+  25          void PCF8591_Work(void)
+  26          {
+  27   1        unsigned int temp;
+  28   1        Rb2_vol = PCF8591_AD(0x03);
+  29   1        temp = (unsigned int)((double)Rb2_vol * 5 / 255 * 100 + 0.5);
+  30   1        if(DAC_Mod == 0)
+  31   1          PCF8591_DA(0x66); //Êä³ö2V
+  32   1        else
+  33   1          PCF8591_DA(Rb2_vol);  //Êä³öRb2µçÑ¹
+  34   1        Rb2_vol = temp;
+  35   1      }
+  36          
+  37          void Init_Timer(void)
+  38          {
+  39   1        AUXR = 0x80;
+  40   1        TMOD = 0x15;
+  41   1        TH0 = 0;
+  42   1        TL0 = 0;
+  43   1        TH1 = 0xD8;
+  44   1        TL1 = 0xF0;
+  45   1        ET0 = 0;
+  46   1        ET1 = 1;
+  47   1        TR0 = 1;
+  48   1        TR1 = 1;
+  49   1        EA = 1;
+  50   1      }
+  51          
+  52          void Display(unsigned char mod)
+  53          {
+C51 COMPILER V9.56.0.0   MAIN                                                              01/15/2022 17:34:43 PAGE 2   
+
+  54   1        unsigned char i;
+  55   1        if(Dis_On)
+  56   1        {
+  57   2          if(mod == 0)
+  58   2          {
+  59   3            for(i = 0; i < 8; i++)
+  60   3            {
+  61   4              InputP0(6,0x01<<i);
+  62   4              switch(i)
+  63   4              {
+  64   5                case 0:InputP0(7,0xC1);break;
+  65   5                case 1:InputP0(7,0xFF);break;
+  66   5                case 2:InputP0(7,0xFF);break;
+  67   5                case 3:InputP0(7,0xFF);break;
+  68   5                case 4:InputP0(7,0xFF);break;
+  69   5                case 5:InputP0(7,duan[Rb2_vol/100]&0x7F); break;
+  70   5                case 6:InputP0(7,duan[Rb2_vol%100/10]); break;
+  71   5                case 7:InputP0(7,duan[Rb2_vol%10]);break;
+  72   5              }
+  73   4              Delay(8);
+  74   4              InputP0(7,0xFF);
+  75   4            }
+  76   3          }
+  77   2          if(mod == 1)
+  78   2          {
+  79   3            for(i = 0; i < 8; i++)
+  80   3            {
+  81   4              InputP0(6,0x01<<i);
+  82   4              switch(i)
+  83   4              {
+  84   5                case 0:InputP0(7,duan[0x0F]);break;
+  85   5                case 1:InputP0(7,0xFF);break;
+  86   5                case 2:InputP0(7,0xFF);break;
+  87   5                case 3:if(Freq >= 10000) InputP0(7,duan[Freq/10000]); else InputP0(7,0xFF); break;
+  88   5                case 4:if(Freq >= 1000) InputP0(7,duan[Freq%10000/1000]); else InputP0(7,0xFF); break;
+  89   5                case 5:if(Freq >= 100) InputP0(7,duan[Freq%1000/100]); else InputP0(7,0xFF); break;
+  90   5                case 6:if(Freq >= 10) InputP0(7,duan[Freq%100/10]); else InputP0(7,0xFF); break;
+  91   5                case 7:InputP0(7,duan[Freq%10]);break;
+  92   5              }
+  93   4              Delay(8);
+  94   4              InputP0(7,0xFF);
+  95   4            }
+  96   3          }
+  97   2        }
+  98   1      }
+  99          
+ 100          void s4_scanf(void)
+ 101          {
+ 102   1        if(S4 == 0)
+ 103   1        {
+ 104   2          Delay(10);
+ 105   2          if(S4 == 0)
+ 106   2          {
+ 107   3            while(S4 == 0)
+ 108   3              Display(Dis_Mod);
+ 109   3            Dis_Mod = (Dis_Mod + 1) % 2;
+ 110   3          }
+ 111   2        }
+ 112   1      }
+ 113          
+ 114          void s5_scanf(void)
+ 115          {
+C51 COMPILER V9.56.0.0   MAIN                                                              01/15/2022 17:34:43 PAGE 3   
+
+ 116   1        if(S5 == 0)
+ 117   1        {
+ 118   2          Delay(10);
+ 119   2          if(S5 == 0)
+ 120   2          {
+ 121   3            while(S5 == 0)
+ 122   3              Display(Dis_Mod);
+ 123   3            DAC_Mod = (DAC_Mod + 1) % 2;
+ 124   3          }
+ 125   2        }
+ 126   1      }
+ 127          
+ 128          void s6_scanf(void)
+ 129          {
+ 130   1        if(S6 == 0)
+ 131   1        {
+ 132   2          Delay(10);
+ 133   2          if(S6 == 0)
+ 134   2          {
+ 135   3            while(S6 == 0)
+ 136   3              Display(Dis_Mod);
+ 137   3            LED_On = (LED_On + 1) % 2;
+ 138   3          }
+ 139   2        }
+ 140   1      }
+ 141          
+ 142          void s7_scanf(void)
+ 143          {
+ 144   1        if(S7 == 0)
+ 145   1        {
+ 146   2          Delay(10);
+ 147   2          if(S7 == 0)
+ 148   2          {
+ 149   3            while(S7 == 0)
+ 150   3              Display(Dis_Mod);
+ 151   3            Dis_On = (Dis_On + 1) % 2;
+ 152   3          }
+ 153   2        }
+ 154   1      }
+ 155          
+ 156          void LED_work(void)
+ 157          {
+ 158   1        InitHC138(4);
+ 159   1        P0 = P0 | 0xE0;
+ 160   1        if(LED_On)
+ 161   1        {
+ 162   2          //L1¡¢L2
+ 163   2          if(Dis_Mod == 0)
+ 164   2          {
+ 165   3            L1 = 0;
+ 166   3            L2 = 1;
+ 167   3          }
+ 168   2          else
+ 169   2          {
+ 170   3            L1 = 1;
+ 171   3            L2 = 0;
+ 172   3          }
+ 173   2          //L3
+ 174   2          if(Rb2_vol >= 350)
+ 175   2            L3 = 0;
+ 176   2          else if(Rb2_vol >= 250 && Rb2_vol < 350)
+ 177   2            L3 = 1;
+C51 COMPILER V9.56.0.0   MAIN                                                              01/15/2022 17:34:43 PAGE 4   
+
+ 178   2          else if(Rb2_vol >= 150 && Rb2_vol < 250)
+ 179   2            L3 = 0;
+ 180   2          else if(Rb2_vol < 150)
+ 181   2            L3 = 1;
+ 182   2          //L4
+ 183   2          if(Freq >= 10000)
+ 184   2            L4 = 0;
+ 185   2          else if(Freq >= 5000 && Freq < 10000)
+ 186   2            L4 = 1;
+ 187   2          else if(Freq >= 1000 && Freq < 5000)
+ 188   2            L4 = 0;
+ 189   2          else if(Freq < 1000)
+ 190   2            L4 = 1;
+ 191   2          //L5
+ 192   2          if(DAC_Mod == 0)
+ 193   2            L5 = 1;
+ 194   2          else 
+ 195   2            L5 = 0;
+ 196   2        }
+ 197   1        else
+ 198   1          P0 = 0xFF;
+ 199   1      }
+ 200          
+ 201          void main(void)
+ 202          {
+ 203   1        InputP0(5,0x00);
+ 204   1        InputP0(4,0xFF);
+ 205   1        Init_Timer();
+ 206   1        while(1)
+ 207   1        {
+ 208   2          PCF8591_Work();
+ 209   2          s4_scanf();
+ 210   2          s5_scanf();
+ 211   2          s6_scanf();
+ 212   2          s7_scanf();
+ 213   2          Display(Dis_Mod);
+ 214   2          LED_work();
+ 215   2        }
+ 216   1      }
+ 217          
+ 218          void T1_ser(void) interrupt 3
+ 219          {
+ 220   1        TH1 = (65536 - 10000) / 256;
+ 221   1        TL1 = (65536 - 10000) % 256;
+ 222   1        if(++Count_10ms == 100)
+ 223   1        {
+ 224   2          Freq = (TH0 << 8) | TL0;
+ 225   2          Count_10ms = 0;
+ 226   2          TH0 = 0;
+ 227   2          TL0 = 0;
+ 228   2        }
+ 229   1      }
+ 230          
+ 231          
+ 232          
+ 233          
+ 234          
+ 235          
+ 236          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+C51 COMPILER V9.56.0.0   MAIN                                                              01/15/2022 17:34:43 PAGE 5   
+
+   CODE SIZE        =   1070    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      9       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

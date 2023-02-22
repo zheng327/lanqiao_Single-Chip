@@ -1,0 +1,6 @@
+".\Objects\main.obj",
+".\Objects\onewire.obj",
+".\Objects\my.obj",
+".\Objects\iic.obj" 
+TO ".\Objects\第十二届" 
+PRINT(".\Listings\第十二届.m51")
